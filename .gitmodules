@@ -1,0 +1,15 @@
+[submodule "libs/HC"]
+	path = libs/HC
+	url = git@github.com:vrld/HC.git
+[submodule "libs/hump"]
+	path = libs/hump
+	url = git@github.com:vrld/hump.git
+[submodule "libs/Sysl-Pixel"]
+	path = libs/Sysl-Pixel
+	url = git@github.com:SystemLogoff/Sysl-Pixel.git
+[submodule "libs/deep"]
+	path = libs/deep
+	url = git@github.com:Nikaoto/deep.git
+[submodule "libs/batteries"]
+	path = libs/batteries
+	url = git@github.com:1bardesign/batteries.git

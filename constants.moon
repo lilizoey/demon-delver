@@ -1,0 +1,1 @@
+export WORLD_TILE_SIZE=24
