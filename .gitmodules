@@ -13,3 +13,6 @@
 [submodule "libs/batteries"]
 	path = libs/batteries
 	url = git@github.com:1bardesign/batteries.git
+[submodule "libs/Concord"]
+	path = libs/Concord
+	url = git@github.com:Tjakka5/Concord.git
