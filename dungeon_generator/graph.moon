@@ -20,7 +20,11 @@ class Node
     new: (color=COLORS.DEFAULT) =>
         @color = color
         @edges = {}
-    
+        @tags = {}
+        @distances = {}
+        @eccentricity = 0
+        @run_dijkstra = false
+
     add_edge: (node) =>
         @edges[node] = node
     
@@ -44,10 +48,14 @@ class Node
             count += node\count_connected counted, no_count
         count
     
-    draw: (x, y, node_radius, edge_length) =>
+    draw: (x, y, node_radius, edge_length, distance_node) =>
         love.graphics.setColor unpack DEBUG_COLORING_MAP[@color]
         node_distance = node_radius * 2 + edge_length
         love.graphics.circle "fill", x * node_distance, y * node_distance, node_radius
+        if distance_node
+            love.graphics.setColor 0,0,0
+            distance = @\distance_to distance_node
+            love.graphics.print distance, x * node_distance-node_radius/2, y * node_distance - node_radius/2, 0, 0.5
 
     get_edges: =>
         @edges
@@ -77,6 +85,44 @@ class Node
 
         return nil           
 
+    get_connected: (checked={})=>
+        checked[@] = @
+        for _,node in pairs @edges
+            if checked[node] then continue
+            checked = node\get_connected checked
+        
+        checked
+
+    dijkstra: =>
+        unvisited = @\get_connected!
+        visited = {}
+        current = @
+        @\set_distance @, 0
+
+        while current
+            neighbor_distance = (@\distance_to current) + 1
+            for _,node in pairs current.edges
+                if visited[node] then continue
+                if @\distance_to(node) == nil or @\distance_to(node) > neighbor_distance
+                    @\set_distance node, neighbor_distance
+
+            unvisited[current] = nil
+            visited[current] = current
+
+            current = nil
+            for _,node in pairs unvisited
+                if not @\distance_to node then continue
+                if not current or @\distance_to(node) < @\distance_to(current)
+                    current = node
+            if current then current\set_distance @, @\distance_to current
+        @run_dijkstra = true
+
+    distance_to: (node) =>
+        @distances[node]
+
+    set_distance: (node, distance) =>
+        @distances[node] = distance
+        if distance > @eccentricity then @eccentricity = distance
 
 class Graph
     new: (width,height) =>
@@ -245,10 +291,14 @@ class Graph
         for i=1,@count
             @\color_room_intersection_at COLORS.ROOM_INTERSECTION, i, COLORS.LARGE_ROOM
         for i=1,@count
-            @\color_room_door_at COLORS.ROOM_DOORS, i, COLORS.LARGE_ROOM
-        
+            @\color_room_door_at COLORS.ROOM_DOORS, i, COLORS.LARGE_ROOM        
 
-    draw: (node_radius, edge_length) =>     
+    draw: (node_radius, edge_length, completed) =>     
+        if completed and not @distance_node 
+            x,y = @\get_random_coords!
+            @distance_node = @get_node x, y
+            @distance_node\dijkstra!
+        
         node_spacing = node_radius * 2 + edge_length 
         for {x,y} in *@node_list
             if node = @\get_node x,y
@@ -257,7 +307,7 @@ class Graph
                     love.graphics.line x * node_spacing, y * node_spacing, x2 * node_spacing, y2 * node_spacing
         
         for {x,y} in *@node_list
-            (@\get_node x,y)\draw x, y, node_radius, edge_length
+            (@\get_node x,y)\draw x, y, node_radius, edge_length, @distance_node
             love.graphics.setColor 255,255,255
 
 {:Graph}
