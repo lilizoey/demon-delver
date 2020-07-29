@@ -4,16 +4,18 @@ COLORS = {
     DEAD_END: 2,
     INTERSECTION: 3,
     ROOM_INTERSECTION: 4,
-    ROOM_DOORS: 5
+    ROOM_DOORS: 5,
+    PSEUDO_PERIPHERAL: 6,
 }
 
 DEBUG_COLORING_MAP = {
-    [0]: {255,255,255},
-    [1]: {  0,  0,255},
-    [2]: {255,255,  0},
-    [3]: {  0,255,  0},
-    [4]: {255,  0,255},
-    [5]: {  0,255,255}
+    [0]: {  1,  1,  1},
+    [1]: {  0,  0,  1},
+    [2]: {  1,  1,  0},
+    [3]: {  0,  1,  0},
+    [4]: {0.6,  0,  1},
+    [5]: {  0,  1,  1},
+    [6]: {0.5,0.5,0.5}
 }
 
 class Node 
@@ -50,6 +52,8 @@ class Node
     
     draw: (x, y, node_radius, edge_length, distance_node) =>
         love.graphics.setColor unpack DEBUG_COLORING_MAP[@color]
+        if @tags.peripheral
+            love.graphics.setColor unpack DEBUG_COLORING_MAP[COLORS.PSEUDO_PERIPHERAL]
         node_distance = node_radius * 2 + edge_length
         love.graphics.circle "fill", x * node_distance, y * node_distance, node_radius
         if distance_node
@@ -116,6 +120,16 @@ class Node
                     current = node
             if current then current\set_distance @, @\distance_to current
         @run_dijkstra = true
+
+    get_furthest: =>
+        current,distance = @,0
+        for node,dist in pairs @distances
+            if dist > distance 
+                current,distance = node,dist
+            if dist == distance and node\get_degree! < current\get_degree!
+                current,distance = node,dist
+        return current
+
 
     distance_to: (node) =>
         @distances[node]
@@ -280,6 +294,23 @@ class Graph
 
         node.color = color
 
+    color_pseudo_peripherals: =>
+        node = @\find_pseudo_peripheral!
+        node2 = node\get_furthest!
+        node.tags.peripheral = true
+        node2.tags.peripheral = true
+
+    find_pseudo_peripheral: =>
+        prev = @\get_a_node!
+        prev\dijkstra!
+        current = prev\get_furthest!
+        current\dijkstra!
+        while current.eccentricity > prev.eccentricity
+            prev=current
+            current=prev\get_furthest!
+            current\dijkstra!
+        
+        prev
 
     color_features: =>
         for i=1,@count
@@ -291,14 +322,10 @@ class Graph
         for i=1,@count
             @\color_room_intersection_at COLORS.ROOM_INTERSECTION, i, COLORS.LARGE_ROOM
         for i=1,@count
-            @\color_room_door_at COLORS.ROOM_DOORS, i, COLORS.LARGE_ROOM        
+            @\color_room_door_at COLORS.ROOM_DOORS, i, COLORS.LARGE_ROOM
+        @\color_pseudo_peripherals!
 
     draw: (node_radius, edge_length, completed) =>     
-        if completed and not @distance_node 
-            x,y = @\get_random_coords!
-            @distance_node = @get_node x, y
-            @distance_node\dijkstra!
-        
         node_spacing = node_radius * 2 + edge_length 
         for {x,y} in *@node_list
             if node = @\get_node x,y
@@ -307,7 +334,7 @@ class Graph
                     love.graphics.line x * node_spacing, y * node_spacing, x2 * node_spacing, y2 * node_spacing
         
         for {x,y} in *@node_list
-            (@\get_node x,y)\draw x, y, node_radius, edge_length, @distance_node
-            love.graphics.setColor 255,255,255
+            (@\get_node x,y)\draw x, y, node_radius, edge_length
+            love.graphics.setColor 1,1,1
 
 {:Graph}
