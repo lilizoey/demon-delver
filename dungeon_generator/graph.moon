@@ -200,7 +200,8 @@ class Graph
         unpack @node_list[math.random 1, @count]
 
     remove_random_node: =>
-        @\remove_node (unpack @\get_random_coords!)
+        x,y = unpack @\get_random_coords!
+        @\remove_node x,y
 
     is_connected: (start, no_check={}) =>
         start = start or @\get_a_node!
@@ -222,10 +223,14 @@ class Graph
         
         not @\is_connected start, {[cut]:cut}
     
-    remove_random_without_disconnect: =>
-        x,y = @\get_random_coords!
-        while @\is_cut_node x,y
+    remove_random_without_disconnect: (biases={0,0,0,0}) =>
+        local x,y,node,rand
+        retry = true
+        while retry or (@\is_cut_node x,y)
             x,y = @\get_random_coords!
+            node = @\get_node x,y
+            rand = math.random!
+            retry = rand < biases[node\get_degree!]
 
         @\remove_node x,y
     
@@ -309,7 +314,6 @@ class Graph
             prev=current
             current=prev\get_furthest!
             current\dijkstra!
-        
         prev
 
     color_features: =>
